@@ -29,11 +29,12 @@ def load_model():
 def get_predictions(image, model, threshold=0.5):
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Standard ImageNet normalization
     ])
 
+    # Ensure image is in correct format and size
     image_tensor = transform(image).unsqueeze(0)
 
+    # Perform inference
     with torch.no_grad():
         predictions = model(image_tensor)
 
@@ -56,8 +57,13 @@ def get_predictions(image, model, threshold=0.5):
 def draw_boxes(boxes, classes, image):
     img = np.array(image)
     for box, label in zip(boxes, classes):
-        cv2.rectangle(img, box[0], box[1], color=(255, 0, 0), thickness=2)
-        cv2.putText(img, label, (int(box[0][0]), int(box[0][1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        # Convert float coordinates to integers
+        top_left = (int(box[0][0]), int(box[0][1]))
+        bottom_right = (int(box[1][0]), int(box[1][1]))
+        
+        # Draw rectangle and label
+        cv2.rectangle(img, top_left, bottom_right, color=(255, 0, 0), thickness=2)
+        cv2.putText(img, label, (top_left[0], top_left[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
     return img
 
 # Streamlit App Layout
@@ -68,20 +74,33 @@ st.write("Upload an image to perform object detection and classification.")
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")  # Ensure image is in RGB mode
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    try:
+        image = Image.open(uploaded_file).convert("RGB")  # Ensure image is in RGB mode
+        st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    st.write("Detecting objects...")
-    model = load_model()  # Load the model
+        st.write("Detecting objects...")
+        model = load_model()  # Load the model
 
-    # Perform object detection
-    boxes, classes = get_predictions(image, model, threshold=0.5)
+        # Add a progress bar for better UX
+        with st.spinner("Running object detection..."):
+            boxes, classes = get_predictions(image, model, threshold=0.5)
 
-    # Draw boxes on the image
-    result_img = draw_boxes(boxes, classes, image.copy())
+        if boxes and classes:
+            # Draw boxes on the image
+            result_img = draw_boxes(boxes, classes, image.copy())
 
-    # Display the image with detected boxes
-    st.image(result_img, caption="Detected Objects", use_column_width=True)
+            # Display the image with detected boxes
+            st.image(result_img, caption="Detected Objects", use_column_width=True)
 
-    # Display the detected classes
-    st.write("Detected Classes:", classes)
+            # Display the detected classes
+            st.write("Detected Classes:", classes)
+        else:
+            st.write("No objects detected with a confidence above the threshold.")
+
+    except Exception as e:
+        st.error(f"Error occurred: {e}")
+else:
+    st.write("Please upload an image to proceed.")
+
+# Add instructions for better user guidance
+st.info("Note: Ensure that the uploaded image is clear and in proper lighting conditions for better results.")
