@@ -4,7 +4,6 @@ from torchvision import models, transforms
 from PIL import Image
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
 # Load a pre-trained model for object detection
 @st.cache_resource
@@ -15,7 +14,11 @@ def load_model():
 
 # Function to get predictions from the model
 def get_predictions(image, model, threshold=0.5):
-    transform = transforms.Compose([transforms.ToTensor()])
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Standard ImageNet normalization
+    ])
+
     image_tensor = transform(image).unsqueeze(0)
 
     with torch.no_grad():
@@ -53,7 +56,7 @@ st.write("Upload an image to perform object detection and classification.")
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file)
+    image = Image.open(uploaded_file).convert("RGB")  # Ensure image is in RGB mode
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
     st.write("Detecting objects...")
