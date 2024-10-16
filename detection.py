@@ -5,6 +5,19 @@ from PIL import Image
 import numpy as np
 import cv2
 
+# Define COCO instance category names
+COCO_INSTANCE_CATEGORY_NAMES = [
+    '__background__', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 
+    'traffic light', 'fire hydrant', 'N/A', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 
+    'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'N/A', 'backpack', 'umbrella', 'N/A', 'N/A', 
+    'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 
+    'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle', 'N/A', 'wine glass', 'cup', 'fork', 
+    'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 
+    'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'N/A', 'dining table', 'N/A', 'toilet', 'N/A', 
+    'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 
+    'refrigerator', 'N/A', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
+]
+
 # Load a pre-trained model for object detection
 @st.cache_resource
 def load_model():
@@ -25,8 +38,7 @@ def get_predictions(image, model, threshold=0.5):
         predictions = model(image_tensor)
 
     # Extract the boxes and labels with scores above the threshold
-    pred_classes = [models.detection.FasterRCNN.COCO_INSTANCE_CATEGORY_NAMES[i]
-                    for i in list(predictions[0]['labels'].numpy())]
+    pred_classes = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions[0]['labels'].numpy())]
     pred_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions[0]['boxes'].detach().numpy())]
     pred_scores = list(predictions[0]['scores'].detach().numpy())
 
@@ -73,43 +85,3 @@ if uploaded_file is not None:
 
     # Display the detected classes
     st.write("Detected Classes:", classes)
-
-# Define COCO instance category names
-COCO_INSTANCE_CATEGORY_NAMES = [
-    '__background__', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light', 
-    'fire hydrant', 'N/A', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 
-    'elephant', 'bear', 'zebra', 'giraffe', 'N/A', 'backpack', 'umbrella', 'N/A', 'N/A', 'handbag', 'tie', 'suitcase', 
-    'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 
-    'tennis racket', 'bottle', 'N/A', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 
-    'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 
-    'bed', 'N/A', 'dining table', 'N/A', 'toilet', 'N/A', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 
-    'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'N/A', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 
-    'hair drier', 'toothbrush'
-]
-
-# Update your prediction extraction logic to use this list:
-def get_predictions(image, model, threshold=0.5):
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Standard ImageNet normalization
-    ])
-
-    image_tensor = transform(image).unsqueeze(0)
-
-    with torch.no_grad():
-        predictions = model(image_tensor)
-
-    # Extract the boxes and labels with scores above the threshold
-    pred_classes = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions[0]['labels'].numpy())]
-    pred_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions[0]['boxes'].detach().numpy())]
-    pred_scores = list(predictions[0]['scores'].detach().numpy())
-
-    filtered_boxes = []
-    filtered_classes = []
-
-    for i, score in enumerate(pred_scores):
-        if score > threshold:
-            filtered_boxes.append(pred_boxes[i])
-            filtered_classes.append(pred_classes[i])
-
-    return filtered_boxes, filtered_classes
