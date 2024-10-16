@@ -31,14 +31,11 @@ def get_predictions(image, model, threshold=0.5):
         transforms.ToTensor(),
     ])
 
-    # Ensure image is in correct format and size
     image_tensor = transform(image).unsqueeze(0)
 
-    # Perform inference
     with torch.no_grad():
         predictions = model(image_tensor)
 
-    # Extract the boxes and labels with scores above the threshold
     pred_classes = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions[0]['labels'].numpy())]
     pred_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions[0]['boxes'].detach().numpy())]
     pred_scores = list(predictions[0]['scores'].detach().numpy())
@@ -56,14 +53,24 @@ def get_predictions(image, model, threshold=0.5):
 # Draw boxes and labels on the image
 def draw_boxes(boxes, classes, image):
     img = np.array(image)
+    
+    # Check if boxes and classes are empty
+    if len(boxes) == 0 or len(classes) == 0:
+        st.write("No objects detected with confidence above the threshold.")
+        return img
+    
     for box, label in zip(boxes, classes):
-        # Convert float coordinates to integers
-        top_left = (int(box[0][0]), int(box[0][1]))
-        bottom_right = (int(box[1][0]), int(box[1][1]))
-        
-        # Draw rectangle and label
-        cv2.rectangle(img, top_left, bottom_right, color=(255, 0, 0), thickness=2)
-        cv2.putText(img, label, (top_left[0], top_left[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        try:
+            # Convert float coordinates to integers
+            top_left = (int(box[0][0]), int(box[0][1]))
+            bottom_right = (int(box[1][0]), int(box[1][1]))
+            
+            # Draw rectangle and label
+            cv2.rectangle(img, top_left, bottom_right, color=(255, 0, 0), thickness=2)
+            cv2.putText(img, label, (top_left[0], top_left[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        except Exception as e:
+            st.write(f"Error drawing box for {label}: {e}")
+    
     return img
 
 # Streamlit App Layout
@@ -85,7 +92,13 @@ if uploaded_file is not None:
         with st.spinner("Running object detection..."):
             boxes, classes = get_predictions(image, model, threshold=0.5)
 
+        st.write(f"Detected {len(classes)} objects.")  # Display number of detected objects
+
         if boxes and classes:
+            # Print debug info
+            st.write(f"Boxes: {boxes}")
+            st.write(f"Classes: {classes}")
+
             # Draw boxes on the image
             result_img = draw_boxes(boxes, classes, image.copy())
 
