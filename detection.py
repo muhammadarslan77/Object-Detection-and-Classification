@@ -85,7 +85,7 @@ if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")  # Ensure image is in RGB mode
         st.image(image, caption="Uploaded Image", use_column_width=True)
 
-        st.write("Detecting objects...")
+        #st.write("Detecting objects...")
         model = load_model()  # Load the model
 
         # Add a progress bar for better UX
