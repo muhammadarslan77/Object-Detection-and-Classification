@@ -96,8 +96,8 @@ if uploaded_file is not None:
 
         if boxes and classes:
             # Print debug info
-            st.write(f"Boxes: {boxes}")
-            st.write(f"Classes: {classes}")
+            #st.write(f"Boxes: {boxes}")
+            #st.write(f"Classes: {classes}")
 
             # Draw boxes on the image
             result_img = draw_boxes(boxes, classes, image.copy())
@@ -106,7 +106,7 @@ if uploaded_file is not None:
             st.image(result_img, caption="Detected Objects", use_column_width=True)
 
             # Display the detected classes
-            st.write("Detected Classes:", classes)
+            #st.write("Detected Classes:", classes)
         else:
             st.write("No objects detected with a confidence above the threshold.")
 
